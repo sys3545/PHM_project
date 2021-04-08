@@ -1,5 +1,5 @@
 from serial import Serial
-import tkinter
+import tkinter as Tk
 from matplotlib import pyplot as plt
 from matplotlib import animation
 import random
@@ -13,7 +13,7 @@ BaudRate = 9600 # 전송 속도
 ARD = Serial(PORT,BaudRate) # 아두이노와 연결되는 통신 시리얼 객체
 
 ################
-ig = plt.figure(figsize = (11.4, 3))     #figure(도표) 생성
+fig = plt.figure(figsize = (11.4, 3))     #figure(도표) 생성
 
 ax = plt.subplot(211, xlim=(0, 100), ylim=(0, 50))
 
