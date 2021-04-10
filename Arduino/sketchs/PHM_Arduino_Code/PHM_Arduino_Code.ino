@@ -16,9 +16,7 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   current=digitalRead(SIG);
-
-  message=String(current);
-  message+=String("\n");
-  message.toCharArray(out, message.length()+1);
-  BTSerial.write(out);
+  
+  BTSerial.print(current);
+  BTSerial.println();
 }
