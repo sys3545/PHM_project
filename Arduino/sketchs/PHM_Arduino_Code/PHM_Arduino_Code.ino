@@ -16,6 +16,7 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+<<<<<<< HEAD
   int h = dht.readHumidity();
   int t = dht.readTemperature();
 
@@ -25,4 +26,10 @@ void loop() {
   BTSerial.print(t);
   BTSerial.println();
   delay(100);
+=======
+  current=digitalRead(SIG);
+  
+  BTSerial.print(current);
+  BTSerial.println();
+>>>>>>> 5319b1e59d6350d22585b8705c2169deba5867cf
 }
