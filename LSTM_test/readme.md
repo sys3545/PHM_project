@@ -10,6 +10,8 @@ lstm past_set 을 10개로 설정합니다
 전체 데이터 셋의 80% 학습 데이터, 20%를 테스트 데이터로 사용합니다
 rmse = 0.195296
 
+![image](https://user-images.githubusercontent.com/37216958/116819962-90163b00-abad-11eb-8ced-d9eb2f54823f.png)
+
 
 ### saved_model.h5 - create_model에서 생성한 모델을 h5 형태로 저장
 향후 학습 과정 없이 모델을 사용하기 위해 모델을 따로 분리하여 파일로 저장합니다
