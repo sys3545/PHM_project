@@ -21,6 +21,8 @@ rmse = 0.195296
 분리된 model 파일을 사용하여 모델 학습 부분이 없습니다.
 rmse = 0.07456
 
+<img src="https://user-images.githubusercontent.com/37216958/116820171-89d48e80-abae-11eb-8451-7ec0c0e8bc83.png"  width="600" height="350">
+
 
 ### sensor_data.csv - 모델 학습에 사용한 데이터 파일입니다
 
