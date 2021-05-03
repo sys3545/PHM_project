@@ -35,11 +35,11 @@ ax_2.get_xaxis().set_visible(False) # x축 제거
 ax_2.set_title("value_2",fontsize =9)
 
 
-ax_3 = fig.add_subplot(gs[2,0], xlim=(0, 100), ylim=(0, 110))
+ax_3 = fig.add_subplot(gs[2,0], xlim=(0, 100), ylim=(-20, 50))
 max_points_3 = 100
 line_3, = ax_3.plot(np.arange(max_points_3), np.ones(max_points_3, dtype=np.float)*np.nan, lw=1, c='red',ms=1)
 ax_3.get_xaxis().set_visible(False) # x축 제거
-ax_3.set_title("value_3",fontsize =9)
+ax_3.set_title("Electric Current",fontsize =9)
 
 
 ax_4 = fig.add_subplot(gs[3,0], xlim=(0, 100), ylim=(0, 110))
