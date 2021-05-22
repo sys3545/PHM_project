@@ -13,19 +13,58 @@ import tkinter.ttk as ttk
 import tensorflow as tf
 from tensorflow.keras import layers
 from keras.models import load_model
+import tkinter.scrolledtext as tkst
+import datetime
+from socket import *
+import math
+import re
+import threading
+
+
 
 PORT = 'COM5' # 포트 번호
 BaudRate = 9600 # 전송 속도
 ARD = Serial(PORT,BaudRate) # 아두이노와 연결되는 통신 시리얼 객체
+list_df=""
+
+
+def Recv():
+    clientSock = socket(AF_INET, SOCK_STREAM)
+    clientSock.connect(('172.30.1.45', 8080))
+    print(list_df)
+    clientSock.send(list_df.encode())
+    print("전송 완료\n")
+
+    list_recv = clientSock.recv(4096)
+    a = list_recv.decode('utf-8')
+    a = a.strip()
+    a = re.split('[ \[| \] |, | ]', a)
+    a = ' '.join(a).split()
+    a = list(map(float, a))
+    print(a) # a를 list 형태로 변환
+    recv = 1
+
+    global ax_7
+    ax_7.cla()
+    ax_7.axis([0,100,-20,50])
+    X=np.array(range(0,ts))
+    ax_7.plot(X,np.array(a),'r-')
+    clientSock.close()
+
+  
+
+thread1 = threading.Thread(target=Recv)
+
 l = []
 y=[0,0,0,0,0]
 count=0 # csv 인덱스
 ts = 200 
+recv = 0
 
 fig = plt.figure(figsize = (4,4))
-plt.suptitle("Data - Non prediction")
+plt.suptitle("Real-time Data")
 fig2 = plt.figure(figsize = (8,4))
-plt.suptitle("Data - Prediction")
+plt.suptitle("     Real-time Data                                       Predicted Data")
 gs  = GridSpec(nrows=2,ncols=1)
 gs2 = GridSpec(nrows=2,ncols=2)
 
@@ -80,6 +119,7 @@ def init_4():
     return line_4
 
 
+
 def animate(i):
     global y
     LINE= ARD.readline()
@@ -97,46 +137,29 @@ def animate(i):
         line.set_ydata(new_y)
         ARD.flushInput()
 
-    global count;
+    global count
+    global flag
+    global ts
+
     if len(LINE)==4:
         l.append(LINE) # 리스트 추가
     df_csv = pd.DataFrame(l, columns=['Sounds', 'Temperature','Electric Current','Voltage'])
     df_csv.to_csv('sensor_data.csv', index=True, encoding='cp949')  # csv 생성
     count+=1
 
-    if count==201:
+    if count==205:
         col_list = ['Electric Current']
         dataframe = pd.read_csv('sensor_data.csv', usecols=col_list)
         df = np.array(dataframe).flatten()
-        df = pd.Series(df)
-        N=df.size # 데이터 사이즈 
-        mean = df.mean() 
-        std = np.std(df)
-        df = df.map(lambda x : (x - mean) / std) # 정규화
-      
-        model = load_model('phm_model.h5') # 모델 로드
-
-        df_new=df[-ts:]
-        df_new = np.asarray([np.array([df.values[i+j] for j in range(ts)])
-                      for i in range(len(df_new) - ts+1)]).reshape(-1,ts,1) 
-
-        global ax_7
-        ax_7.remove()
-        ax_7 = fig2.add_subplot(gs2[0,1], xlim=(0, 100), ylim=(-20, 50))  
-        max_points_3 = 100
-        ax_7.get_xaxis().set_visible(False) # x축 제거
-        ax_7.set_title("Predicted Electric Current",fontsize =9)
-
-        for i in range(0, ts):
-            pred = model.predict(df_new)
-            for j in range(0, df_new.size-1):
-                df_new[-1][j]=df_new[-1][j+1]
-            df_new[-1][-1]=pred
-        
-
-        X=np.array(range(0,ts))
-        df_new[-1] = (df_new[-1]*std)+mean
-        ax_7.plot(X,df_new[-1],'r-')
+        df = df.tolist()
+        df = df[-ts:]
+        ####
+        global list_df
+        list_df = str(df)
+        thread1 = threading.Thread(target=Recv)
+        thread1.start()
+          
+        #####
         count=0
 
     return line,
@@ -162,13 +185,42 @@ def animate_4(i):
 
     return line_4 
 
-
-## UI ##
 root = Tk.Tk() #추가 
 root.title("PHM")
-root.geometry("1200x520+120+50")
+root.geometry("1500x620+120+50")
 root.resizable(False,False)
 root.configure(bg='white')
+
+
+def btncmd():
+    if(combobox.get() == "Voltage"):  # 값 설정       
+        Alarm()
+        scrt.insert(Tk.INSERT," V repair\n")
+    elif(combobox.get() == "Electric Current"):
+        Alarm()
+        scrt.insert(Tk.INSERT," E.C repair\n")
+
+
+def Alarm():
+    now = datetime.datetime.now()
+    nowDatetime = now.strftime('%Y-%m-%d %H:%M:%S ')
+    scrt.insert(Tk.INSERT, nowDatetime)
+
+
+scrt = tkst.ScrolledText(root, width=33, height=5)
+scrt.grid(row = 1,column = 0)
+ttk.Label(root, text="Time").grid(column=0,row=2) 
+
+
+values = ["Voltage","Electric Current","temperature"]
+
+combobox = ttk.Combobox(root,height=5,values=values)
+combobox.grid(row = 1,column = 1)
+combobox.set("선택")
+
+btn = Tk.Button(root, text = "수리",command = btncmd)
+btn.grid(row = 2,column = 1)
+
 canvas = FigureCanvasTkAgg(fig, master=root)
 canvas.get_tk_widget().grid(column=0,row=0) 
 
