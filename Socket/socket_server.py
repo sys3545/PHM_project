@@ -55,8 +55,10 @@ while(1) :
     a = a.strip()
     a = re.split('[ \[| \] |, | ]', a)
     a = ' '.join(a).split()
+    print(len(a))
     list_a = []
     list_a = list(map(float, a))
+    list_a = list_a[-ts:]
     print(len(list_a))
     df = pd.Series(list_a, dtype = np.float64)
     N=df.size
@@ -83,6 +85,7 @@ while(1) :
     df_new[-1] = df_new[-1] * std + mean
     df_new[-1] = np.round(df_new[-1], 2)
     print("전송중")
+
     connectionSock.send(str(df_new[-1]).encode('utf-8'))
     print("전송완료")
     print(df_new[-1])
