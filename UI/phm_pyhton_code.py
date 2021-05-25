@@ -26,8 +26,18 @@ PORT = 'COM5' # 포트 번호
 BaudRate = 9600 # 전송 속도
 ARD = Serial(PORT,BaudRate) # 아두이노와 연결되는 통신 시리얼 객체
 list_df=""
-error_count=0
-error_check=0
+error_count=0 # 전류 예측 에러
+error_check=0 # 전류 예측 에러 (체크)
+v_error_check_pred=0 # 전압 예측 에러
+
+e_error_check_real=0 # 전류 실시간 에러
+v_error_check_real=0
+s_error_check_real=0
+t_error_check_real=0
+sound_error_count=0
+
+select=0 # 현재 선택된 상태 (전류 or 전압)
+datatype=0 # 보낸 데이터의 종류, 들어올 데이터의 종류( 전류 or 전압 )
 
 def Recv():
     clientSock = socket(AF_INET, SOCK_STREAM)
@@ -46,16 +56,30 @@ def Recv():
     recv = 1
 
     global ax_7
-    ax_7.cla()
-    ax_7.axis([0,200,-20,50])
-    X=np.array(range(0,ts))
-    ax_7.plot(X,np.array(a),'r-')
-
     global error_count
-    for i in a:
-        if i >=30:
-            error_count+=1
+    global datatype
+    global v_error_check_pred
+
+    if(datatype==0):
+        ax_7.cla()
+        ax_7.axis([0,200,-20,60])
+        X=np.array(range(0,ts))
+        ax_7.plot(X,np.array(a),'r-')
+        fig2.suptitle("Predicted Electric Current")
+        for i in a:
+            if i >=30:
+                error_count+=1
     
+    ave=0
+    if(datatype==1):
+        ax_7.cla()
+        ax_7.axis([0,200,480,520])
+        X=np.array(range(0,ts))
+        ax_7.plot(X,np.array(a),'k-')
+        fig2.suptitle("Predicted Voltage")
+        if np.mean(a) >=499 :
+            v_error_check_pred=1
+        
     clientSock.close()
 
   
@@ -144,15 +168,41 @@ def animate(i):
     global count
     global flag
     global ts
+    global select
+    global datatype
+    global v_error_check_pred
+    global e_error_check_real
+    global v_error_check_real
+    global s_error_check_real
+    global t_error_check_real
+    global sound_error_count
 
     if len(LINE)==4:
         l.append(LINE) # 리스트 추가
+        if int(LINE[1]) >=50:
+            t_error_check_real+=1
+        if int(LINE[2]) >=40:
+            e_error_check_real+=1
+        if int(LINE[0]) <=70:
+            sound_error_count+=1
+
     df_csv = pd.DataFrame(l, columns=['Sounds', 'Temperature','Electric Current','Voltage'])
     df_csv.to_csv('sensor_data.csv', index=True, encoding='cp949')  # csv 생성
     count+=1
 
     if count==205:
-        col_list = ['Electric Current']
+        # 소리 에러 갯수 확인
+        if sound_error_count >=140:
+            s_error_check_real=1
+
+        # 선택 상태 확인
+        if select==0:
+            col_list = ['Electric Current']
+            datatype=0
+        elif select==1:
+            col_list = ['Voltage']
+            datatype=1
+
         dataframe = pd.read_csv('sensor_data.csv', usecols=col_list)
         df = np.array(dataframe).flatten()
         df = df.tolist()
@@ -189,44 +239,97 @@ def animate_4(i):
 
     global error_count
     global error_check
+    global v_error_check_pred
+    global e_error_check_real
+    global v_error_check_real
+    global s_error_check_real
+    global t_error_check_real
+
+    
+    # 전류 예측 에러 검사
     if error_count >= 10 :
         if(error_check == 0):
             error_check+=1
             Alarm()
             scrt.insert(Tk.INSERT, "E.C\n", 'error')
             scrt.tag_config('error', foreground='red')
-            ax_3.set_title("Electric Current (Repair required)",fontsize =9, color='r')
+            #ax_3.set_title("Electric Current (Repair required)",fontsize =9, color='r')
+
+    # 전압 예측 에러 검사
+    if v_error_check_pred == 1:
+        v_error_check_pred+=1
+        Alarm()
+        scrt.insert(Tk.INSERT, "Voltage\n", 'error')
+        scrt.tag_config('error', foreground='red')
+
+    # 온도 실시간 에러 검사
+    if t_error_check_real == 1:
+        t_error_check_real+=1
+        ax_2.set_title("Temperature (Repair required)",fontsize =9, color='r')
+
+    # 전류 실시간 에러 검사
+    if e_error_check_real == 1:
+        e_error_check_real+=1
+        ax_3.set_title("Electric Current (Repair required)",fontsize =9, color='r')
+
+    # 소리 실시간 에러 검사
+    if s_error_check_real == 1:
+        s_error_check_real+=1
+        ax.set_title("Sound (Repair required)",fontsize =9, color='r')
+
+
 
     return line_4 
 
 root = Tk.Tk() #추가 
 root.title("PHM")
-root.geometry("1500x900+120+50")
+root.geometry("1200x800+120+50")
 root.resizable(False,False)
 root.configure(bg='white')
 
 
+# 수리,점검 버튼 이벤트
 def btncmd():
     global error_check
     global error_count
-    if(combobox.get() == "Voltage"):  # 값 설정       
+    global v_error_check_pred
+    global e_error_check_real
+    global v_error_check_real
+    global s_error_check_real
+    global t_error_check_real
+
+    if(combobox.get() == "Voltage_Predict"):  # 값 설정       
         Alarm()
         scrt.insert(Tk.INSERT," V repair\n")
-        ax_3.set_title("Voltage",fontsize =9, color='black')
-        error_check=0
-        error_count=0
-    elif(combobox.get() == "Electric Current"):
+        #ax_3.set_title("Voltage",fontsize =9, color='black')
+        v_error_check_pred=0
+    elif(combobox.get() == "Electric Current_Predict"):
         Alarm()
         scrt.insert(Tk.INSERT," E.C repair\n")
-        ax_3.set_title("Electric Current",fontsize =9, color='black')
         error_check=0
         error_count=0
-
+    elif(combobox.get() == "Temperature"):
+        ax_2.set_title("Temperature",fontsize =9, color='black')
+        t_error_check_real=0
+    elif(combobox.get() == "Electric Current_Real"):
+        ax_3.set_title("Electric Current",fontsize =9, color='black')
+        e_error_check_real=0
+    elif(combobox.get() == "Sounds"):
+        ax.set_title("Sounds",fontsize =9, color='black')
+        s_error_check_real=0
 
 def Alarm():
     now = datetime.datetime.now()
     nowDatetime = now.strftime('%Y-%m-%d %H:%M:%S ')
     scrt.insert(Tk.INSERT, nowDatetime)
+
+def choose():
+     global select
+
+     if(combobox2.get() == "Voltage"):
+         select = 1
+     elif(combobox2.get() == "Electric Current"):
+         select = 0
 
 
 scrt = tkst.ScrolledText(root, width=33, height=5)
@@ -234,7 +337,7 @@ scrt.grid(row = 1,column = 1)
 #ttk.Label(root, text="Time").grid(column=0,row=2) 
 
 
-values = ["Voltage","Electric Current","temperature"]
+values = ["Voltage_Predict","Voltage_Real","Electric Current_Predict","Electric Current_Real","Sounds", "Temperature"]
 
 combobox = ttk.Combobox(root,height=5,values=values)
 combobox.grid(row = 2,column = 1)
@@ -243,11 +346,13 @@ combobox.set("선택")
 btn = Tk.Button(root, text = "수리",command = btncmd)
 btn.grid(row = 3,column = 1)
 
-combobox2 = ttk.Combobox(root,height=5,values=values)
+values2 = ["Voltage","Electric Current"]
+
+combobox2 = ttk.Combobox(root,height=5,values=values2)
 combobox2.grid(row = 2,column = 0)
 combobox2.set("선택")
 
-btn2 = Tk.Button(root, text = "확인")
+btn2 = Tk.Button(root, text = "확인", command = choose)
 btn2.grid(row = 3,column = 0)
 
 canvas = FigureCanvasTkAgg(fig, master=root)
