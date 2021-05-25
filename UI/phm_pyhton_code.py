@@ -26,11 +26,12 @@ PORT = 'COM5' # 포트 번호
 BaudRate = 9600 # 전송 속도
 ARD = Serial(PORT,BaudRate) # 아두이노와 연결되는 통신 시리얼 객체
 list_df=""
-
+error_count=0
+error_check=0
 
 def Recv():
     clientSock = socket(AF_INET, SOCK_STREAM)
-    clientSock.connect(('172.30.1.45', 8080))
+    clientSock.connect(('192.168.43.17', 8080))
     print(list_df)
     clientSock.send(list_df.encode())
     print("전송 완료\n")
@@ -46,9 +47,15 @@ def Recv():
 
     global ax_7
     ax_7.cla()
-    ax_7.axis([0,100,-20,50])
+    ax_7.axis([0,200,-20,50])
     X=np.array(range(0,ts))
     ax_7.plot(X,np.array(a),'r-')
+
+    global error_count
+    for i in a:
+        if i >=30:
+            error_count+=1
+    
     clientSock.close()
 
   
@@ -61,12 +68,13 @@ count=0 # csv 인덱스
 ts = 200 
 recv = 0
 
-fig = plt.figure(figsize = (4,4))
+fig = plt.figure(figsize = (8,4))
 plt.suptitle("Real-time Data")
-fig2 = plt.figure(figsize = (8,4))
-plt.suptitle("     Real-time Data                                       Predicted Data")
-gs  = GridSpec(nrows=2,ncols=1)
-gs2 = GridSpec(nrows=2,ncols=2)
+fig2 = plt.figure(figsize = (8,2))
+plt.suptitle("Predicted Data")
+gs  = GridSpec(nrows=2,ncols=2)
+gs2 = GridSpec(nrows=1,ncols=1)
+
 
 ax = fig.add_subplot(gs[0,0], xlim=(0, 100), ylim=(0, 80)) # [0,0]에 그림
 max_points = 100
@@ -74,36 +82,32 @@ line, = ax.plot(np.arange(max_points), np.ones(max_points, dtype=np.float)*np.na
 ax.get_xaxis().set_visible(False) # x축 제거
 ax.set_title("Sounds",fontsize =9)
 
-ax_2 = fig.add_subplot(gs[1,0], xlim=(0, 100), ylim=(0, 40))
+ax_2 = fig.add_subplot(gs[0,1], xlim=(0, 100), ylim=(0, 40))
 max_points_2 = 100
 line_2, = ax_2.plot(np.arange(max_points_2), np.ones(max_points_2, dtype=np.float)*np.nan, lw=1, c='green',ms=1)
 ax_2.get_xaxis().set_visible(False) # x축 제거
 ax_2.set_title("Temperature",fontsize =9)
 
 
-ax_3 = fig2.add_subplot(gs2[0,0], xlim=(0, 100), ylim=(-20, 50))
+ax_3 = fig.add_subplot(gs[1,0], xlim=(0, 100), ylim=(-20, 50))
 max_points_3 = 100
 line_3, = ax_3.plot(np.arange(max_points_3), np.ones(max_points_3, dtype=np.float)*np.nan, lw=1, c='red',ms=1)
 ax_3.get_xaxis().set_visible(False) # x축 제거
 ax_3.set_title("Electric Current",fontsize =9)
 
 
-ax_4 = fig2.add_subplot(gs2[1,0], xlim=(0, 100), ylim=(480, 520))
+ax_4 = fig.add_subplot(gs[1,1], xlim=(0, 100), ylim=(480, 520))
 max_points_4 = 100
 line_4, = ax_4.plot(np.arange(max_points_4), np.ones(max_points_4, dtype=np.float)*np.nan, lw=1, c='black',ms=1)
 ax_4.get_xaxis().set_visible(False) # x축 제거
 ax_4.set_title("Voltage",fontsize =9)
 
 
-ax_7 = fig2.add_subplot(gs2[0,1], xlim=(0, 100), ylim=(-20, 50))
+ax_7 = fig2.add_subplot(gs2[0,0], xlim=(0, 200), ylim=(-20, 50))
 max_points_3 = 100
 ax_7.get_xaxis().set_visible(False) # x축 제거
-ax_7.set_title("Predicted Electric Current",fontsize =9)
 
-ax_8 = fig2.add_subplot(gs2[1,1], xlim=(0, 100), ylim=(-20, 50))
-max_points_3 = 100
-ax_8.get_xaxis().set_visible(False) # x축 제거
-ax_8.set_title("Predicted Voltage",fontsize =9)
+
 
 #################################
 def init():
@@ -183,22 +187,40 @@ def animate_4(i):
     new_y = np.r_[old_y[1:], y[3]]
     line_4.set_ydata(new_y)
 
+    global error_count
+    global error_check
+    if error_count >= 10 :
+        if(error_check == 0):
+            error_check+=1
+            Alarm()
+            scrt.insert(Tk.INSERT, "E.C\n", 'error')
+            scrt.tag_config('error', foreground='red')
+            ax_3.set_title("Electric Current (Repair required)",fontsize =9, color='r')
+
     return line_4 
 
 root = Tk.Tk() #추가 
 root.title("PHM")
-root.geometry("1500x620+120+50")
+root.geometry("1500x900+120+50")
 root.resizable(False,False)
 root.configure(bg='white')
 
 
 def btncmd():
+    global error_check
+    global error_count
     if(combobox.get() == "Voltage"):  # 값 설정       
         Alarm()
         scrt.insert(Tk.INSERT," V repair\n")
+        ax_3.set_title("Voltage",fontsize =9, color='black')
+        error_check=0
+        error_count=0
     elif(combobox.get() == "Electric Current"):
         Alarm()
         scrt.insert(Tk.INSERT," E.C repair\n")
+        ax_3.set_title("Electric Current",fontsize =9, color='black')
+        error_check=0
+        error_count=0
 
 
 def Alarm():
@@ -208,28 +230,37 @@ def Alarm():
 
 
 scrt = tkst.ScrolledText(root, width=33, height=5)
-scrt.grid(row = 1,column = 0)
-ttk.Label(root, text="Time").grid(column=0,row=2) 
+scrt.grid(row = 1,column = 1)
+#ttk.Label(root, text="Time").grid(column=0,row=2) 
 
 
 values = ["Voltage","Electric Current","temperature"]
 
 combobox = ttk.Combobox(root,height=5,values=values)
-combobox.grid(row = 1,column = 1)
+combobox.grid(row = 2,column = 1)
 combobox.set("선택")
 
 btn = Tk.Button(root, text = "수리",command = btncmd)
-btn.grid(row = 2,column = 1)
+btn.grid(row = 3,column = 1)
+
+combobox2 = ttk.Combobox(root,height=5,values=values)
+combobox2.grid(row = 2,column = 0)
+combobox2.set("선택")
+
+btn2 = Tk.Button(root, text = "확인")
+btn2.grid(row = 3,column = 0)
 
 canvas = FigureCanvasTkAgg(fig, master=root)
 canvas.get_tk_widget().grid(column=0,row=0) 
 
 canvas2 = FigureCanvasTkAgg(fig2, master=root)
-canvas2.get_tk_widget().grid(column=1,row=0) 
+canvas2.get_tk_widget().grid(column=0,row=1) 
+ 
 
 anim = animation.FuncAnimation(fig, animate  , init_func= init ,frames=200, interval=50, blit=False)
 anim_2 = animation.FuncAnimation(fig, animate_2 ,init_func= init_2 ,frames=200, interval=50, blit=False)
-anim_3 = animation.FuncAnimation(fig2, animate_3 ,init_func= init_3 ,frames=200, interval=50, blit=False)
+anim_3 = animation.FuncAnimation(fig, animate_3 ,init_func= init_3 ,frames=200, interval=50, blit=False)
 anim_4 = animation.FuncAnimation(fig2, animate_4 ,init_func= init_4 ,frames=200, interval=50, blit=False)
+
 
 Tk.mainloop()
