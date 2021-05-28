@@ -59,12 +59,16 @@ def Recv():
     global error_count
     global datatype
     global v_error_check_pred
+    global y_pred_ticks
 
     if(datatype==0):
         ax_7.cla()
         ax_7.axis([0,200,-20,60])
+        y_pred_ticks= np.arange(-20, 61, 10)
+        ax_7.set_yticks(y_pred_ticks)
         X=np.array(range(0,ts))
         ax_7.plot(X,np.array(a),'r-')
+        ax_7.grid(True)
         fig2.suptitle("Predicted Electric Current")
         for i in a:
             if i >=30:
@@ -74,8 +78,11 @@ def Recv():
     if(datatype==1):
         ax_7.cla()
         ax_7.axis([0,200,480,520])
+        y_pred_ticks= np.arange(480, 521, 5)
+        ax_7.set_yticks(y_pred_ticks)
         X=np.array(range(0,ts))
         ax_7.plot(X,np.array(a),'k-')
+        ax_7.grid(True)
         fig2.suptitle("Predicted Voltage")
         if np.mean(a) >=499 :
             v_error_check_pred=1
@@ -99,38 +106,53 @@ plt.suptitle("Predicted Data")
 gs  = GridSpec(nrows=2,ncols=2)
 gs2 = GridSpec(nrows=1,ncols=1)
 
+x_ticks = np.arange(0, 101, 10)
+x_pred_ticks= np.arange(0, 201, 10)
 
-ax = fig.add_subplot(gs[0,0], xlim=(0, 100), ylim=(0, 80)) # [0,0]에 그림
+y_ticks1 = np.arange(0, 31, 5)
+y_ticks2 = np.arange(0, 41, 5)
+y_ticks3 = np.arange(-20, 61, 10)
+y_ticks4 = np.arange(480, 521, 5)
+y_pred_ticks= np.arange(-20, 61, 10)
+
+ax = fig.add_subplot(gs[0,0], xlim=(0, 100), ylim=(0, 30)) # [0,0]에 그림
 max_points = 100
 line, = ax.plot(np.arange(max_points), np.ones(max_points, dtype=np.float)*np.nan, lw=1, c='blue',ms=1)
-ax.get_xaxis().set_visible(False) # x축 제거
 ax.set_title("Sounds",fontsize =9)
+ax.set_xticks(x_ticks)
+ax.set_yticks(y_ticks1)
+ax.grid(True)
 
 ax_2 = fig.add_subplot(gs[0,1], xlim=(0, 100), ylim=(0, 40))
 max_points_2 = 100
 line_2, = ax_2.plot(np.arange(max_points_2), np.ones(max_points_2, dtype=np.float)*np.nan, lw=1, c='green',ms=1)
-ax_2.get_xaxis().set_visible(False) # x축 제거
 ax_2.set_title("Temperature",fontsize =9)
+ax_2.set_xticks(x_ticks)
+ax_2.set_yticks(y_ticks2)
+ax_2.grid(True)
 
-
-ax_3 = fig.add_subplot(gs[1,0], xlim=(0, 100), ylim=(-20, 50))
+ax_3 = fig.add_subplot(gs[1,0], xlim=(0, 100), ylim=(-20, 60))
 max_points_3 = 100
 line_3, = ax_3.plot(np.arange(max_points_3), np.ones(max_points_3, dtype=np.float)*np.nan, lw=1, c='red',ms=1)
-ax_3.get_xaxis().set_visible(False) # x축 제거
 ax_3.set_title("Electric Current",fontsize =9)
+ax_3.set_xticks(x_ticks)
+ax_3.set_yticks(y_ticks3)
+ax_3.grid(True)
 
 
 ax_4 = fig.add_subplot(gs[1,1], xlim=(0, 100), ylim=(480, 520))
 max_points_4 = 100
 line_4, = ax_4.plot(np.arange(max_points_4), np.ones(max_points_4, dtype=np.float)*np.nan, lw=1, c='black',ms=1)
-ax_4.get_xaxis().set_visible(False) # x축 제거
 ax_4.set_title("Voltage",fontsize =9)
+ax_4.set_xticks(x_ticks)
+ax_4.set_yticks(y_ticks4)
+ax_4.grid(True)
 
-
-ax_7 = fig2.add_subplot(gs2[0,0], xlim=(0, 200), ylim=(-20, 50))
+ax_7 = fig2.add_subplot(gs2[0,0], xlim=(0, 200), ylim=(-20, 60))
 max_points_3 = 100
-ax_7.get_xaxis().set_visible(False) # x축 제거
-
+ax_7.set_xticks(x_pred_ticks)
+ax_7.set_yticks(y_pred_ticks)
+ax_7.grid(True)
 
 
 #################################
@@ -253,7 +275,7 @@ def animate_4(i):
             Alarm()
             scrt.insert(Tk.INSERT, "E.C\n", 'error')
             scrt.tag_config('error', foreground='red')
-            #ax_3.set_title("Electric Current (Repair required)",fontsize =9, color='r')
+            
 
     # 전압 예측 에러 검사
     if v_error_check_pred == 1:
@@ -334,7 +356,6 @@ def choose():
 
 scrt = tkst.ScrolledText(root, width=33, height=5)
 scrt.grid(row = 1,column = 1)
-#ttk.Label(root, text="Time").grid(column=0,row=2) 
 
 
 values = ["Voltage_Predict","Voltage_Real","Electric Current_Predict","Electric Current_Real","Sounds", "Temperature"]
