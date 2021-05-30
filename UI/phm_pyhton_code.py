@@ -35,13 +35,15 @@ v_error_check_real=0
 s_error_check_real=0
 t_error_check_real=0
 sound_error_count=0
+voltage_error_count=0
 
 select=0 # 현재 선택된 상태 (전류 or 전압)
 datatype=0 # 보낸 데이터의 종류, 들어올 데이터의 종류( 전류 or 전압 )
 
+last_time =""   # last update
 def Recv():
     clientSock = socket(AF_INET, SOCK_STREAM)
-    clientSock.connect(('192.168.43.17', 8080))
+    clientSock.connect(('172.30.1.22', 8080))
     print(list_df)
     clientSock.send(list_df.encode())
     print("전송 완료\n")
@@ -60,7 +62,6 @@ def Recv():
     global datatype
     global v_error_check_pred
     global y_pred_ticks
-
     if(datatype==0):
         ax_7.cla()
         ax_7.axis([0,200,-20,60])
@@ -68,7 +69,7 @@ def Recv():
         ax_7.set_yticks(y_pred_ticks)
         X=np.array(range(0,ts))
         ax_7.plot(X,np.array(a),'r-')
-        ax_7.grid(True)
+        ax_7.grid(True,alpha=0.3)
         fig2.suptitle("Predicted Electric Current")
         for i in a:
             if i >=30:
@@ -82,11 +83,14 @@ def Recv():
         ax_7.set_yticks(y_pred_ticks)
         X=np.array(range(0,ts))
         ax_7.plot(X,np.array(a),'k-')
-        ax_7.grid(True)
+        ax_7.grid(True,alpha=0.3)
         fig2.suptitle("Predicted Voltage")
         if np.mean(a) >=499 :
             v_error_check_pred=1
-        
+    
+    now = datetime.datetime.now()
+    global last_time
+    last_time = now.strftime("%Y-%m-%d_%H:%M:%S")
     clientSock.close()
 
   
@@ -106,6 +110,7 @@ plt.suptitle("Predicted Data")
 gs  = GridSpec(nrows=2,ncols=2)
 gs2 = GridSpec(nrows=1,ncols=1)
 
+#x_ticks = np.arange(0, 21, 2)
 x_ticks = np.arange(0, 101, 10)
 x_pred_ticks= np.arange(0, 201, 10)
 
@@ -118,42 +123,45 @@ y_pred_ticks= np.arange(-20, 61, 10)
 ax = fig.add_subplot(gs[0,0], xlim=(0, 100), ylim=(0, 30)) # [0,0]에 그림
 max_points = 100
 line, = ax.plot(np.arange(max_points), np.ones(max_points, dtype=np.float)*np.nan, lw=1, c='blue',ms=1)
-ax.set_title("Sounds",fontsize =9)
+ax.set_title("Sounds",fontsize =12)
 ax.set_xticks(x_ticks)
 ax.set_yticks(y_ticks1)
-ax.grid(True)
+ax.grid(True,alpha=0.3)
 
 ax_2 = fig.add_subplot(gs[0,1], xlim=(0, 100), ylim=(0, 40))
 max_points_2 = 100
 line_2, = ax_2.plot(np.arange(max_points_2), np.ones(max_points_2, dtype=np.float)*np.nan, lw=1, c='green',ms=1)
-ax_2.set_title("Temperature",fontsize =9)
+ax_2.set_title("Temperature",fontsize =12)
 ax_2.set_xticks(x_ticks)
 ax_2.set_yticks(y_ticks2)
-ax_2.grid(True)
+ax_2.grid(True,alpha=0.3)
 
 ax_3 = fig.add_subplot(gs[1,0], xlim=(0, 100), ylim=(-20, 60))
 max_points_3 = 100
 line_3, = ax_3.plot(np.arange(max_points_3), np.ones(max_points_3, dtype=np.float)*np.nan, lw=1, c='red',ms=1)
-ax_3.set_title("Electric Current",fontsize =9)
+ax_3.set_title("Electric Current",fontsize =12)
 ax_3.set_xticks(x_ticks)
 ax_3.set_yticks(y_ticks3)
-ax_3.grid(True)
+ax_3.grid(True,alpha=0.3)
 
 
 ax_4 = fig.add_subplot(gs[1,1], xlim=(0, 100), ylim=(480, 520))
 max_points_4 = 100
 line_4, = ax_4.plot(np.arange(max_points_4), np.ones(max_points_4, dtype=np.float)*np.nan, lw=1, c='black',ms=1)
-ax_4.set_title("Voltage",fontsize =9)
+ax_4.set_title("Voltage",fontsize =12)
 ax_4.set_xticks(x_ticks)
 ax_4.set_yticks(y_ticks4)
-ax_4.grid(True)
+ax_4.grid(True,alpha=0.3)
+
+fig.tight_layout()
 
 ax_7 = fig2.add_subplot(gs2[0,0], xlim=(0, 200), ylim=(-20, 60))
 max_points_3 = 100
 ax_7.set_xticks(x_pred_ticks)
 ax_7.set_yticks(y_pred_ticks)
-ax_7.grid(True)
+ax_7.grid(True,alpha=0.3)
 
+fig2.tight_layout()
 
 #################################
 def init():
@@ -197,6 +205,7 @@ def animate(i):
     global s_error_check_real
     global t_error_check_real
     global sound_error_count
+    global voltage_error_count
 
     if len(LINE)==4:
         l.append(LINE) # 리스트 추가
@@ -204,8 +213,10 @@ def animate(i):
             t_error_check_real+=1
         if int(LINE[2]) >=40:
             e_error_check_real+=1
-        if int(LINE[0]) <=70:
+        if int(LINE[0]) <=15:
             sound_error_count+=1
+        if int(LINE[3]) >=500:
+            voltage_error_count+=1
 
     df_csv = pd.DataFrame(l, columns=['Sounds', 'Temperature','Electric Current','Voltage'])
     df_csv.to_csv('sensor_data.csv', index=True, encoding='cp949')  # csv 생성
@@ -215,6 +226,10 @@ def animate(i):
         # 소리 에러 갯수 확인
         if sound_error_count >=140:
             s_error_check_real=1
+
+        # 전압 에러 갯수 확인
+        if voltage_error_count >=100:
+            v_error_check_real=1
 
         # 선택 상태 확인
         if select==0:
@@ -233,9 +248,13 @@ def animate(i):
         list_df = str(df)
         thread1 = threading.Thread(target=Recv)
         thread1.start()
-          
+     
         #####
         count=0
+
+    table()
+    temp = "Voltage  : %2d    Electric Current : %2d    Sound : %2d   Temp : %2d "% (y[3],y[2],y[0],y[1])
+    label.config(text=temp)
 
     return line,
 
@@ -275,7 +294,6 @@ def animate_4(i):
             scrt.insert(Tk.INSERT, "E.C\n", 'error')
             scrt.tag_config('error', foreground='red')
             
-
     # 전압 예측 에러 검사
     if v_error_check_pred == 1:
         v_error_check_pred+=1
@@ -286,25 +304,26 @@ def animate_4(i):
     # 온도 실시간 에러 검사
     if t_error_check_real == 1:
         t_error_check_real+=1
-        ax_2.set_title("Temperature (Repair required)",fontsize =9, color='r')
-
+        ax_2.set_facecolor('tomato')
     # 전류 실시간 에러 검사
     if e_error_check_real == 1:
         e_error_check_real+=1
-        ax_3.set_title("Electric Current (Repair required)",fontsize =9, color='r')
-
+        ax_3.set_facecolor('tomato')
     # 소리 실시간 에러 검사
     if s_error_check_real == 1:
         s_error_check_real+=1
-        ax.set_title("Sound (Repair required)",fontsize =9, color='r')
-
+        ax.set_facecolor('tomato')
+    # 전압 실시간 에러 검사
+    if v_error_check_real == 1:
+        v_error_check_real+=1
+        ax_4.set_facecolor('tomato')
 
 
     return line_4 
 
 root = Tk.Tk() #추가 
 root.title("PHM")
-root.geometry("1200x800+120+50")
+root.geometry("1300x800+120+50")
 root.resizable(False,False)
 root.configure(bg='white')
 
@@ -321,23 +340,56 @@ def btncmd():
 
     if(combobox.get() == "Voltage_Predict"):  # 값 설정       
         Alarm()
-        scrt.insert(Tk.INSERT," V repair\n")
-        #ax_3.set_title("Voltage",fontsize =9, color='black')
+        scrt.insert(Tk.INSERT," V repair\n")       
+        ax_3.set_facecolor('white')
         v_error_check_pred=0
     elif(combobox.get() == "Electric Current_Predict"):
         Alarm()
         scrt.insert(Tk.INSERT," E.C repair\n")
+        ax_3.set_facecolor('white')
         error_check=0
         error_count=0
-    elif(combobox.get() == "Temperature"):
-        ax_2.set_title("Temperature",fontsize =9, color='black')
+
+    elif(combobox.get() == "Temperature"):       
+        ax_2.set_facecolor('white')
         t_error_check_real=0
     elif(combobox.get() == "Electric Current_Real"):
-        ax_3.set_title("Electric Current",fontsize =9, color='black')
+        ax_3.set_facecolor('white')
         e_error_check_real=0
     elif(combobox.get() == "Sounds"):
-        ax.set_title("Sounds",fontsize =9, color='black')
+        ax.set_facecolor('white')
         s_error_check_real=0
+    elif(combobox.get() == "Voltage_Real"):
+        ax_4.set_facecolor('white')
+        v_error_check_real=0
+
+##경과시간
+start_time = time.time()
+def elapsedTime():
+
+    elapsed_time = time.time() - start_time
+    m, s = divmod(elapsed_time, 60)
+    h, m = divmod(m, 60)
+    d, h = divmod(h, 24)
+    
+    if d > 0:
+        dtime = str(int(d)) + "d_"
+    else: 
+        dtime = ""
+        
+    if h > 0:
+        htime = str(int(h)) + ":"
+    else:
+        htime = "00:"
+        
+    if m > 0:
+        mtime = str(int(m)) + ":"
+    else:
+        mtime = "00:"
+    
+        
+    strTime = dtime+"%02d:%02d:%02d" % (h,m,s)
+    return strTime 
 
 def Alarm():
     now = datetime.datetime.now()
@@ -352,34 +404,71 @@ def choose():
      elif(combobox2.get() == "Electric Current"):
          select = 0
 
+         
+def table():
+    Detail.insert('',2,text="Runtime",values=elapsedTime())
+    Detail.insert('',3,text="Last Update",values=last_time)
 
-scrt = tkst.ScrolledText(root, width=33, height=5)
+scrt = tkst.ScrolledText(root, width=50, height=25)
 scrt.grid(row = 1,column = 1)
 
 
 values = ["Voltage_Predict","Voltage_Real","Electric Current_Predict","Electric Current_Real","Sounds", "Temperature"]
 
 combobox = ttk.Combobox(root,height=5,values=values)
-combobox.grid(row = 2,column = 1)
+combobox.grid(row = 3,column = 1)
 combobox.set("선택")
 
-btn = Tk.Button(root, text = "수리",command = btncmd)
-btn.grid(row = 3,column = 1)
+btn = Tk.Button(root, text = "점검",command = btncmd)
+btn.grid(row = 5,column = 1)
 
 values2 = ["Voltage","Electric Current"]
 
 combobox2 = ttk.Combobox(root,height=5,values=values2)
-combobox2.grid(row = 2,column = 0)
-combobox2.set("선택")
+combobox2.grid(row = 3,column = 0)
+combobox2.set("Electric Current")
 
 btn2 = Tk.Button(root, text = "확인", command = choose)
-btn2.grid(row = 3,column = 0)
+btn2.grid(row = 5,column = 0)
 
 canvas = FigureCanvasTkAgg(fig, master=root)
-canvas.get_tk_widget().grid(column=0,row=0) 
+canvas.get_tk_widget().grid(column=0,row=1) 
 
 canvas2 = FigureCanvasTkAgg(fig2, master=root)
-canvas2.get_tk_widget().grid(column=0,row=1) 
+canvas2.get_tk_widget().grid(column=0,row=2) 
+
+## 시간 , 데이터
+
+now = datetime.datetime.now()
+s = now.strftime("%Y-%m-%d %H:%M:%S")
+t = now.strftime("%Y-%m-%d_%H:%M:%S")
+
+
+temp = "Voltage  : 0    Electric Current : 0    Sound : 0   Temp : 0 "
+label = ttk.Label(root, text=temp,padding =(40,10), font=("Bahnschrift SemiBold","16"),background = "white", relief ="solid")
+label.grid(row = 0,column=0)
+
+empty_label = ttk.Label(root,text="",font = ("","3"),background = "white")
+empty_label.grid(row=4,column=0)
+
+empty_label2 = ttk.Label(root,text="",font = ("","3"),background = "white")
+empty_label2.grid(row=4,column=1)
+
+## 표
+
+Detail = ttk.Treeview(root,columns=["one"],displaycolumns=["one"],height=4)
+Detail.grid(row=2,column=1)
+
+Detail.column("#0", width=200,anchor="s")
+Detail.heading("#0", text="Data",anchor="s")
+ 
+Detail.column("#1", width=200)
+Detail.heading("#1", text="Value", anchor="center")
+
+Detail.insert('',0,text="Start Time",values=t)
+Detail.insert('',1,text="Updates/sec",values="40")
+Detail.insert('',2,text="Runtime",values=elapsedTime())
+Detail.insert('',3,text="Last Update",values ="::")
  
 
 anim = animation.FuncAnimation(fig, animate  , init_func= init ,frames=200, interval=50, blit=False)
