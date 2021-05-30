@@ -169,7 +169,6 @@ def init_4():
     return line_4
 
 
-
 def animate(i):
     global y
     LINE= ARD.readline()
