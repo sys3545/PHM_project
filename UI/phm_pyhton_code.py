@@ -43,7 +43,7 @@ datatype=0 # 보낸 데이터의 종류, 들어올 데이터의 종류( 전류 o
 last_time =""   # last update
 def Recv():
     clientSock = socket(AF_INET, SOCK_STREAM)
-    clientSock.connect(('172.30.1.22', 8080))
+    clientSock.connect(('192.168.43.17', 8080))
     print(list_df)
     clientSock.send(list_df.encode())
     print("전송 완료\n")
@@ -120,7 +120,7 @@ y_ticks3 = np.arange(-20, 61, 10)
 y_ticks4 = np.arange(480, 521, 5)
 y_pred_ticks= np.arange(-20, 61, 10)
 
-ax = fig.add_subplot(gs[0,0], xlim=(0, 100), ylim=(0, 30)) # [0,0]에 그림
+ax = fig.add_subplot(gs[0,0], xlim=(0, 100), ylim=(10, 30)) # [0,0]에 그림
 max_points = 100
 line, = ax.plot(np.arange(max_points), np.ones(max_points, dtype=np.float)*np.nan, lw=1, c='blue',ms=1)
 ax.set_title("Sounds",fontsize =12)
@@ -156,7 +156,6 @@ ax_4.grid(True,alpha=0.3)
 fig.tight_layout()
 
 ax_7 = fig2.add_subplot(gs2[0,0], xlim=(0, 200), ylim=(-20, 60))
-max_points_3 = 100
 ax_7.set_xticks(x_pred_ticks)
 ax_7.set_yticks(y_pred_ticks)
 ax_7.grid(True,alpha=0.3)
@@ -184,6 +183,7 @@ def animate(i):
     if LINE[0]=='M':
         LINE = LINE.replace("M","")
         LINE = LINE.split(',')
+        LINE[2]=str(int(LINE[2])+20)
         for i in range(0,4):
             y[i] = float(LINE[i]) # for문으로 변수 여러개
             y[i] = int(LINE[i])
@@ -208,28 +208,33 @@ def animate(i):
     global voltage_error_count
 
     if len(LINE)==4:
+        #LINE[2]=str(int(LINE[2])+20)
         l.append(LINE) # 리스트 추가
         if int(LINE[1]) >=50:
             t_error_check_real+=1
-        if int(LINE[2]) >=40:
+        if int(LINE[2]) >=30:
             e_error_check_real+=1
-        if int(LINE[0]) <=15:
+        if int(LINE[0]) <=20:
             sound_error_count+=1
         if int(LINE[3]) >=500:
             voltage_error_count+=1
 
-    df_csv = pd.DataFrame(l, columns=['Sounds', 'Temperature','Electric Current','Voltage'])
-    df_csv.to_csv('sensor_data.csv', index=True, encoding='cp949')  # csv 생성
-    count+=1
+        df_csv = pd.DataFrame(l, columns=['Sounds', 'Temperature','Electric Current','Voltage'])
+        df_csv.to_csv('sensor_data.csv', index=True, encoding='cp949')  # csv 생성
+        count+=1
 
-    if count==205:
+    if count==201:
         # 소리 에러 갯수 확인
-        if sound_error_count >=140:
+        if sound_error_count >=120:
             s_error_check_real=1
+        elif sound_error_count <=120:
+            sound_error_count=0
 
         # 전압 에러 갯수 확인
         if voltage_error_count >=100:
             v_error_check_real=1
+        elif voltage_error_count <=100:
+            voltage_error_count=0
 
         # 선택 상태 확인
         if select==0:
@@ -253,8 +258,14 @@ def animate(i):
         count=0
 
     table()
-    temp = "Voltage  : %2d    Electric Current : %2d    Sound : %2d   Temp : %2d "% (y[3],y[2],y[0],y[1])
-    label.config(text=temp)
+    text_v = "   Voltage  : %02d" % (y[3])
+    label_v.configure(text=text_v)
+    text_c = "    Current  : %02d" % (y[2])
+    label_c.configure(text=text_c)
+    text_t = "Temperature  : %02d" % (y[1])
+    label_t.configure(text=text_t)
+    text_s = "     Sound  : %02d" % (y[0])
+    label_s.configure(text=text_s)
 
     return line,
 
@@ -323,7 +334,7 @@ def animate_4(i):
 
 root = Tk.Tk() #추가 
 root.title("PHM")
-root.geometry("1300x800+120+50")
+root.geometry("1400x800+120+50")
 root.resizable(False,False)
 root.configure(bg='white')
 
@@ -443,10 +454,35 @@ now = datetime.datetime.now()
 s = now.strftime("%Y-%m-%d %H:%M:%S")
 t = now.strftime("%Y-%m-%d_%H:%M:%S")
 
+# 로고 레이블
+text_locate2 = "P H M"
+label_locate2 = ttk.Label(root, text=text_locate2, font=("Bahnschrift SemiBold", "40"), foreground='blue', background='white', relief='flat')
+label_locate2.grid(row=0, column=1)
+## 데이터찍는 레이블
+text_locate = " "
+label_locate = ttk.Label(root, text=text_locate, width=70, padding=(40, 30),
+                  font=("Bahnschrift SemiBold", "16"), background='white', relief='flat')
+label_locate.grid(row=0, column=0)
 
-temp = "Voltage  : 0    Electric Current : 0    Sound : 0   Temp : 0 "
-label = ttk.Label(root, text=temp,padding =(40,10), font=("Bahnschrift SemiBold","16"),background = "white", relief ="solid")
-label.grid(row = 0,column=0)
+text_v = "   Voltage  : %02d"  
+label_v = ttk.Label(root, text=text_v, width=14, padding=(20, 10),
+                  font=("Bahnschrift SemiBold", "16"), background='white', relief='solid')
+label_v.place(x=30, y=20)
+
+text_c = "   Current  : %02d" 
+label_c = ttk.Label(root, text=text_c, width=14, padding=(20, 10),
+                  font=("Bahnschrift SemiBold", "16"), background='white', relief='solid')
+label_c.place(x=240, y=20)
+
+text_t = "Temperature  : %02d" 
+label_t = ttk.Label(root, text=text_t, width=14, padding=(20, 10),
+                  font=("Bahnschrift SemiBold", "16"), background='white', relief='solid')
+label_t.place(x=450, y=20)
+
+text_s = "   Sound  : %02d" 
+label_s = ttk.Label(root, text=text_s, width=14, padding=(20, 10),
+                  font=("Bahnschrift SemiBold", "16"), background='white', relief='solid')
+label_s.place(x=660, y=20)
 
 empty_label = ttk.Label(root,text="",font = ("","3"),background = "white")
 empty_label.grid(row=4,column=0)
