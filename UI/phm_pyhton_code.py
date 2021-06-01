@@ -114,13 +114,13 @@ gs2 = GridSpec(nrows=1,ncols=1)
 x_ticks = np.arange(0, 101, 10)
 x_pred_ticks= np.arange(0, 201, 10)
 
-y_ticks1 = np.arange(0, 31, 5)
+y_ticks1 = np.arange(10, 31, 5)
 y_ticks2 = np.arange(0, 41, 5)
 y_ticks3 = np.arange(-20, 61, 10)
 y_ticks4 = np.arange(480, 521, 5)
 y_pred_ticks= np.arange(-20, 61, 10)
 
-ax = fig.add_subplot(gs[0,0], xlim=(0, 100), ylim=(10, 30)) # [0,0]에 그림
+ax = fig.add_subplot(gs[1,1], xlim=(0, 100), ylim=(10, 30)) # [0,0]에 그림
 max_points = 100
 line, = ax.plot(np.arange(max_points), np.ones(max_points, dtype=np.float)*np.nan, lw=1, c='blue',ms=1)
 ax.set_title("Sounds",fontsize =12)
@@ -128,7 +128,7 @@ ax.set_xticks(x_ticks)
 ax.set_yticks(y_ticks1)
 ax.grid(True,alpha=0.3)
 
-ax_2 = fig.add_subplot(gs[0,1], xlim=(0, 100), ylim=(0, 40))
+ax_2 = fig.add_subplot(gs[1,0], xlim=(0, 100), ylim=(0, 40))
 max_points_2 = 100
 line_2, = ax_2.plot(np.arange(max_points_2), np.ones(max_points_2, dtype=np.float)*np.nan, lw=1, c='green',ms=1)
 ax_2.set_title("Temperature",fontsize =12)
@@ -136,7 +136,7 @@ ax_2.set_xticks(x_ticks)
 ax_2.set_yticks(y_ticks2)
 ax_2.grid(True,alpha=0.3)
 
-ax_3 = fig.add_subplot(gs[1,0], xlim=(0, 100), ylim=(-20, 60))
+ax_3 = fig.add_subplot(gs[0,1], xlim=(0, 100), ylim=(-20, 60))
 max_points_3 = 100
 line_3, = ax_3.plot(np.arange(max_points_3), np.ones(max_points_3, dtype=np.float)*np.nan, lw=1, c='red',ms=1)
 ax_3.set_title("Electric Current",fontsize =12)
@@ -145,7 +145,7 @@ ax_3.set_yticks(y_ticks3)
 ax_3.grid(True,alpha=0.3)
 
 
-ax_4 = fig.add_subplot(gs[1,1], xlim=(0, 100), ylim=(480, 520))
+ax_4 = fig.add_subplot(gs[0,0], xlim=(0, 100), ylim=(480, 520))
 max_points_4 = 100
 line_4, = ax_4.plot(np.arange(max_points_4), np.ones(max_points_4, dtype=np.float)*np.nan, lw=1, c='black',ms=1)
 ax_4.set_title("Voltage",fontsize =12)
@@ -315,19 +315,19 @@ def animate_4(i):
     # 온도 실시간 에러 검사
     if t_error_check_real == 1:
         t_error_check_real+=1
-        ax_2.set_facecolor('tomato')
+        ax_2.set_facecolor('#F5A9A9')
     # 전류 실시간 에러 검사
     if e_error_check_real == 1:
         e_error_check_real+=1
-        ax_3.set_facecolor('tomato')
+        ax_3.set_facecolor('#F5A9A9')
     # 소리 실시간 에러 검사
     if s_error_check_real == 1:
         s_error_check_real+=1
-        ax.set_facecolor('tomato')
+        ax.set_facecolor('#F5A9A9')
     # 전압 실시간 에러 검사
     if v_error_check_real == 1:
         v_error_check_real+=1
-        ax_4.set_facecolor('tomato')
+        ax_4.set_facecolor('#F5A9A9')
 
 
     return line_4 
@@ -456,7 +456,7 @@ t = now.strftime("%Y-%m-%d_%H:%M:%S")
 
 # 로고 레이블
 text_locate2 = "P H M"
-label_locate2 = ttk.Label(root, text=text_locate2, font=("Bahnschrift SemiBold", "40"), foreground='blue', background='white', relief='flat')
+label_locate2 = ttk.Label(root, text=text_locate2, font=("Bahnschrift SemiBold", "36"), foreground="#A3ABE0", background='white', relief='flat')
 label_locate2.grid(row=0, column=1)
 ## 데이터찍는 레이블
 text_locate = " "
